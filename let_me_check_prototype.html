@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f4ef">
+<title>Let me check — Prototype</title>
+<style>
+  :root{
+    --bg:#f7f4ef;
+    --card:#fffdf9;
+    --ink:#292725;
+    --muted:#8b857d;
+    --line:#e8e1d8;
+    --accent:#5f6f61;
+    --accent2:#e8eee8;
+    --bubble:#ffffff;
+    --mine:#e8eee8;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+    min-height:100vh;
+  }
+  .app{
+    width:min(100%,520px);margin:0 auto;min-height:100vh;
+    display:flex;flex-direction:column;background:var(--bg);
+  }
+  header{
+    padding:20px 20px 14px;position:sticky;top:0;background:rgba(247,244,239,.92);
+    backdrop-filter:blur(14px);z-index:5;border-bottom:1px solid rgba(232,225,216,.6);
+  }
+  .top{display:flex;align-items:center;justify-content:space-between}
+  h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.4px}
+  .sub{font-size:12px;color:var(--muted);margin-top:4px}
+  .review{
+    border:0;background:var(--ink);color:white;border-radius:18px;padding:9px 13px;
+    font-size:12px;font-weight:600;cursor:pointer;
+  }
+  #feed{padding:18px 16px 130px;display:flex;flex-direction:column;gap:12px;flex:1}
+  .day{font-size:11px;color:var(--muted);text-align:center;margin:4px 0}
+  .msg{display:flex;align-items:flex-end;gap:7px}
+  .msg.mine{justify-content:flex-end}
+  .bubble{
+    max-width:82%;padding:11px 13px;border-radius:18px 18px 18px 5px;
+    background:var(--bubble);box-shadow:0 1px 2px rgba(0,0,0,.035);position:relative;
+    border:1px solid rgba(232,225,216,.75);cursor:pointer;
+  }
+  .mine .bubble{background:var(--mine);border-radius:18px 18px 5px 18px}
+  .bubble.selected{outline:2px solid var(--accent);outline-offset:2px}
+  .text{font-size:15px;line-height:1.42;white-space:pre-wrap}
+  .time{font-size:9px;color:var(--muted);margin-top:5px;text-align:right}
+  .empty{
+    margin:auto;text-align:center;color:var(--muted);max-width:300px;padding:40px 20px
+  }
+  .empty .logo{font-size:42px;margin-bottom:12px}
+  .empty h2{font-size:18px;color:var(--ink);margin:0 0 7px}
+  .empty p{font-size:13px;line-height:1.5;margin:0}
+  .composer{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    width:min(100%,520px);padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(transparent,var(--bg) 16%);
+  }
+  .compose-inner{
+    display:flex;align-items:flex-end;gap:8px;background:var(--card);
+    border:1px solid var(--line);border-radius:22px;padding:7px 7px 7px 14px;
+    box-shadow:0 5px 22px rgba(40,35,30,.08)
+  }
+  textarea{
+    flex:1;border:0;outline:0;background:transparent;resize:none;min-height:34px;max-height:120px;
+    font:15px inherit;color:var(--ink);padding:7px 0;
+  }
+  textarea::placeholder{color:#aaa39a}
+  .send{
+    width:38px;height:38px;border:0;border-radius:50%;background:var(--ink);color:white;
+    font-size:18px;cursor:pointer;flex:0 0 auto
+  }
+  .toolbar{
+    display:none;position:fixed;bottom:74px;left:50%;transform:translateX(-50%);
+    width:min(calc(100% - 28px),492px);background:var(--ink);color:white;border-radius:20px;
+    padding:10px 12px;align-items:center;justify-content:space-between;box-shadow:0 10px 28px rgba(0,0,0,.18);z-index:8
+  }
+  .toolbar.show{display:flex}
+  .toolbar span{font-size:12px}
+  .toolbar button{border:0;border-radius:14px;background:white;color:var(--ink);padding:8px 12px;font-weight:700;cursor:pointer}
+  .modal{
+    display:none;position:fixed;inset:0;background:rgba(30,27,24,.32);z-index:20;
+    align-items:flex-end;justify-content:center
+  }
+  .modal.show{display:flex}
+  .sheet{
+    width:min(100%,520px);background:var(--bg);border-radius:26px 26px 0 0;
+    padding:18px 16px calc(20px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto
+  }
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .sheet h3{margin:0;font-size:18px}
+  .close{border:0;background:#e8e1d8;width:30px;height:30px;border-radius:50%;cursor:pointer}
+  .paper{
+    background:#fffdf9;border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:12px;
+    box-shadow:0 2px 10px rgba(40,35,30,.04)
+  }
+  .paper h4{margin:0 0 12px;font-size:16px}
+  .paper ul{margin:0;padding-left:20px}
+  .paper li{margin:8px 0;font-size:14px;line-height:1.35}
+  .hint{font-size:11px;color:var(--muted);margin-top:12px;text-align:center}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="top">
+      <div>
+        <h1>Let me check</h1>
+        <div class="sub">Just put it here. Organize it later.</div>
+      </div>
+      <button class="review" onclick="openReview()">Review</button>
+    </div>
+  </header>
+
+  <main id="feed"></main>
+
+  <div id="toolbar" class="toolbar">
+    <span id="selectedCount">0 selected</span>
+    <button onclick="openReview()">Organize</button>
+  </div>
+
+  <div class="composer">
+    <div class="compose-inner">
+      <textarea id="input" rows="1" placeholder="Anything on your mind…"></textarea>
+      <button class="send" onclick="sendMessage()">↑</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal" class="modal" onclick="if(event.target===this) closeReview()">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3>Review your thoughts</h3>
+      <button class="close" onclick="closeReview()">×</button>
+    </div>
+    <div id="reviewContent"></div>
+    <div class="hint">Prototype only — the organizer is intentionally simple for V1.</div>
+  </div>
+</div>
+
+<script>
+const seed = [
+  {text:"明天买猫砂", time:"2:31 PM"},
+  {text:"想给客厅换一个茶几", time:"2:36 PM"},
+  {text:"周五问一下 HR 关于 PFP 的事情", time:"2:41 PM"},
+  {text:"鸡蛋\n牛奶\n香蕉\n咖啡", time:"2:48 PM"}
+];
+let messages = JSON.parse(localStorage.getItem("lmc_messages") || "null") || seed;
+let selected = new Set();
+
+function save(){ localStorage.setItem("lmc_messages", JSON.stringify(messages)); }
+
+function render(){
+  const feed=document.getElementById("feed");
+  feed.innerHTML="";
+  if(!messages.length){
+    feed.innerHTML=`<div class="empty"><div class="logo">💭</div><h2>Nothing here yet.</h2><p>Whatever pops into your head, put it here. You can figure it out later.</p></div>`;
+  }else{
+    const day=document.createElement("div"); day.className="day"; day.textContent="Today"; feed.appendChild(day);
+    messages.forEach((m,i)=>{
+      const row=document.createElement("div"); row.className="msg mine";
+      const b=document.createElement("div"); b.className="bubble"+(selected.has(i)?" selected":"");
+      b.innerHTML=`<div class="text"></div><div class="time">${m.time}</div>`;
+      b.querySelector(".text").textContent=m.text;
+      b.onclick=()=>toggleSelect(i);
+      row.appendChild(b); feed.appendChild(row);
+    });
+  }
+  updateToolbar();
+  window.scrollTo({top:document.body.scrollHeight,behavior:"smooth"});
+}
+function toggleSelect(i){
+  if(selected.has(i)) selected.delete(i); else selected.add(i);
+  render();
+}
+function updateToolbar(){
+  const t=document.getElementById("toolbar");
+  document.getElementById("selectedCount").textContent=selected.size+" selected";
+  t.classList.toggle("show",selected.size>0);
+}
+function sendMessage(){
+  const input=document.getElementById("input");
+  const text=input.value.trim();
+  if(!text) return;
+  messages.push({text,time:new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})});
+  save(); input.value=""; input.style.height="auto"; render();
+}
+document.getElementById("input").addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}
+});
+document.getElementById("input").addEventListener("input",e=>{
+  e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";
+});
+
+function openReview(){
+  const chosen=[...selected].map(i=>messages[i]);
+  const items=chosen.length?chosen:messages;
+  if(!items.length) return;
+  const content=document.getElementById("reviewContent");
+  const texts=items.map(x=>x.text);
+  const shopping=[],tasks=[],ideas=[],other=[];
+  texts.forEach(t=>{
+    if(/买|购物|牛奶|鸡蛋|香蕉|咖啡|猫砂|costco|grocery|shop/i.test(t)) shopping.push(t);
+    else if(/明天|今天|周五|下周|记得|问|回复|打电话|完成|做/i.test(t)) tasks.push(t);
+    else if(/想|考虑|maybe|应该|换|旅行|纽约|客厅/i.test(t)) ideas.push(t);
+    else other.push(t);
+  });
+  let html="";
+  if(shopping.length) html+=paper("🛒 Shopping List",shopping);
+  if(tasks.length) html+=paper("📋 Things to do",tasks);
+  if(ideas.length) html+=paper("💡 Ideas",ideas);
+  if(other.length) html+=paper("📝 Notes",other);
+  content.innerHTML=html||"<div class='paper'>Nothing to organize yet.</div>";
+  document.getElementById("modal").classList.add("show");
+}
+function paper(title,arr){
+  return `<div class="paper"><h4>${title}</h4><ul>${arr.map(x=>`<li>${escapeHtml(x).replace(/\n/g,"<br>")}</li>`).join("")}</ul></div>`;
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+function closeReview(){document.getElementById("modal").classList.remove("show");}
+render();
+</script>
+</body>
+</html>
